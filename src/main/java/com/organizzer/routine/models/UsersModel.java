@@ -22,7 +22,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Table(name="users")
-@Entity(name="users")
+@Entity(name="UsersModel")
 
 public class UsersModel implements UserDetails{
 	

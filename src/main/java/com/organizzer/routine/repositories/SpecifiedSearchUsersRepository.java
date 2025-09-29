@@ -392,4 +392,20 @@ public class SpecifiedSearchUsersRepository {
 			throw new RuntimeException("erro ao tentar inserir um novo usuário google");
 		}
 	}
+
+	public Boolean isFirstUser() throws Exception {
+		String sqlSearchIsAdmin = "SELECT COUNT(*) from users";
+		
+		try (Connection con = dataSource.getConnection();
+			 PreparedStatement stmt = con.prepareStatement(sqlSearchIsAdmin);
+			 ResultSet rs = stmt.executeQuery()) {
+			
+			if (rs.next() && rs.getInt(1) == 0) {
+				return true;
+			}
+			return false;
+		} catch (SQLException e) {
+			throw new Exception("Erro ao verificar se é o primeiro usuário", e);
+		}
+	}
 }

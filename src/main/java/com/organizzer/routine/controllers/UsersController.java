@@ -1,6 +1,5 @@
 package com.organizzer.routine.controllers;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.organizzer.routine.dtos.UserPerfilDTO;
 import com.organizzer.routine.dtos.UsersImageDTO;
+import com.organizzer.routine.exceptions.UserServiceException;
 import com.organizzer.routine.services.JwtUtils;
 import com.organizzer.routine.services.UsersSpecifiedService;
 
@@ -31,58 +31,60 @@ public class UsersController {
 	private UsersSpecifiedService usersSpecifiedService;
 	
 	@GetMapping("lvl")
-	public List<String> CollectUserLvl(@RequestHeader("Authorization") String token) throws Exception {
-		
-			try {
+	public ResponseEntity<List<String>> collectUserLvl(@RequestHeader("Authorization") String token) {
+		try {
 			token = token.replace("Bearer ", "");
 			Integer userId = jwtUtils.getUserIdFromToken(token);
-			return usersSpecifiedService.ObtainUserLvl(userId);
-			}
-			catch(SQLException exception) {
-				exception.printStackTrace();
-				throw new Exception("Algo deu errado na tentativa de obter o lvl do usuário");
-			}
-	
+			System.out.println("""
+					///////////////////////////
+					OLHA COMO QUE TÁ VINDO
+					//////////////////////////
+					 
+					""" + userId);
+			
+			List<String> userInfo = usersSpecifiedService.obtainUserLvl(userId);
+			return ResponseEntity.ok(userInfo);
+		} catch (Exception e) {
+			throw new UserServiceException("Erro ao obter nível do usuário", e);
+		}
 	}
 	
 	@PutMapping("upload")
-	public ResponseEntity makeUploadImage(@Valid @ModelAttribute UsersImageDTO data, @RequestHeader("authorization") String token) throws Exception {
-		
-		
-		token = token.replace("Bearer ","");
-		
-		Integer userId = jwtUtils.getUserIdFromToken(token);
-		
-		String fileName = usersSpecifiedService.makeUploadImageService(data.getUserImagePerfil(), userId);
-		
-		usersSpecifiedService.addOneImageForUser(fileName, userId);
-		
-		return ResponseEntity.ok("Imagem atribuida corretamente eu acho por enquanto");
-		
+	public ResponseEntity<String> makeUploadImage(
+			@Valid @ModelAttribute UsersImageDTO data, 
+			@RequestHeader("authorization") String token) {
+		try {
+			token = token.replace("Bearer ", "");
+			Integer userId = jwtUtils.getUserIdFromToken(token);
+			
+			String fileName = usersSpecifiedService.makeUploadImageService(data.getUserImagePerfil(), userId);
+			usersSpecifiedService.addOneImageForUser(fileName, userId);
+			
+			return ResponseEntity.ok("Imagem atualizada com sucesso");
+		} catch (Exception e) {
+			throw new UserServiceException("Erro ao fazer upload da imagem", e);
+		}
 	}
 	
 	@PutMapping("change/user")
-	public Boolean ChangeUserRedCredentials(@Valid 
-			@RequestBody UserPerfilDTO data, 
-			@RequestHeader("Authorization") String token) throws Exception{
-		
-	token = token.replace("Bearer ","");
-	
-	Integer userId = jwtUtils.getUserIdFromToken(token);
-		
-	try {
-	usersSpecifiedService.ChangeUserRedCredentialsService(userId, 
-			data.getUserName(), 
-			data.getUserEmail(), 
-			data.getUserCurrentPassword(),
-			data.getNewUserPassword());
-	}catch(SQLException exception) {
-		exception.printStackTrace();
-		throw new Exception("Deu algo errado logo já de cara");
+	public ResponseEntity<Boolean> changeUserRedCredentials(
+			@Valid @RequestBody UserPerfilDTO data, 
+			@RequestHeader("Authorization") String token) {
+		try {
+			token = token.replace("Bearer ", "");
+			Integer userId = jwtUtils.getUserIdFromToken(token);
+			
+			Boolean success = usersSpecifiedService.changeUserRedCredentialsService(
+				userId,
+				data.userName(),
+				data.userEmail(),
+				data.userCurrentPassword(),
+				data.newUserPassword()
+			);
+			
+			return ResponseEntity.ok(success);
+		} catch (Exception e) {
+			throw new UserServiceException("Erro ao atualizar credenciais do usuário", e);
+		}
 	}
-		
-		return true;
-		
-	}
-	
 }
